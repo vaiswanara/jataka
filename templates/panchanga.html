@@ -179,6 +179,9 @@
                         <option value="">-- Select Profile --</option>
                     </select>
                     <button onclick="deleteSelectedProfile()" style="width: auto; margin: 0; background: #c0392b; padding: 8px 15px; font-size: 14px;">🗑️ Delete</button>
+                    <button onclick="exportAllData()" style="width: auto; margin: 0; background: #27ae60; padding: 8px 15px; font-size: 14px;" title="Backup all Profiles and Notes">💾 Backup</button>
+                    <button onclick="document.getElementById('importDataFile').click()" style="width: auto; margin: 0; background: #f39c12; padding: 8px 15px; font-size: 14px;" title="Restore Profiles and Notes">📂 Restore</button>
+                    <input type="file" id="importDataFile" style="display: none;" accept=".json" onchange="importAllData(event)">
                 </div>
                 
                 <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
@@ -1415,6 +1418,38 @@
             savedProfiles[profileName] = data;
             localStorage.setItem('panchanga_profiles', JSON.stringify(savedProfiles));
             loadSelectedProfile(); // టేబుల్ అప్డేట్ అవుతుంది
+        }
+
+        function exportAllData() {
+            const profiles = localStorage.getItem('panchanga_profiles') || '{}';
+            const notes = localStorage.getItem('muhurtha_global_notes') || '{}';
+            
+            const backupData = {
+                panchanga_profiles: JSON.parse(profiles),
+                muhurtha_global_notes: JSON.parse(notes)
+            };
+            
+            const dataStr = JSON.stringify(backupData, null, 2);
+            downloadFile(dataStr, 'e_jyotisha_backup.json', 'application/json');
+            showToast("Backup downloaded successfully!", "success");
+        }
+
+        function importAllData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    if (importedData.panchanga_profiles) localStorage.setItem('panchanga_profiles', JSON.stringify(importedData.panchanga_profiles));
+                    if (importedData.muhurtha_global_notes) localStorage.setItem('muhurtha_global_notes', JSON.stringify(importedData.muhurtha_global_notes));
+                    loadProfilesList();
+                    document.getElementById('muhurthaResultArea').style.display = 'none';
+                    showToast("Data restored successfully!", "success");
+                } catch (err) { alert("Invalid backup file!"); }
+                event.target.value = "";
+            };
+            reader.readAsText(file);
         }
 
         window.onload = init;

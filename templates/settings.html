@@ -283,27 +283,33 @@
         if (hFontInput) data['pdf_header_font'] = hFontInput.value;
         if (bFontInput) data['pdf_body_font'] = bFontInput.value;
 
+        // Save to Local Storage (Browser)
+        localStorage.setItem('e_jyotisha_preferences', JSON.stringify(data));
+
+        // Sync with Server
         fetch('/api/preferences', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
             .then(res => res.json()).then(res => { alert(res.message); }).catch(err => { alert('Error saving preferences'); });
     }
 
     function backupPreferences() {
-        fetch('/api/preferences')
-            .then(res => res.json())
-            .then(data => {
-                const dataStr = JSON.stringify(data, null, 4);
-                const blob = new Blob([dataStr], { type: "application/json" });
-                const a = document.createElement("a");
-                a.href = URL.createObjectURL(blob);
-                
-                const now = new Date();
-                const pad = (n) => n.toString().padStart(2, '0');
-                const timestamp = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
-                a.download = `preference_backup_${timestamp}.json`;
-                a.click();
-                URL.revokeObjectURL(a.href);
-            })
-            .catch(err => alert('Error backing up preferences.'));
+        let dataStr = localStorage.getItem('e_jyotisha_preferences');
+        if (!dataStr) {
+            fetch('/api/preferences').then(res => res.json()).then(data => triggerDownload(JSON.stringify(data, null, 4))).catch(err => alert('Error backing up preferences.'));
+        } else {
+            triggerDownload(JSON.stringify(JSON.parse(dataStr), null, 4));
+        }
+    }
+
+    function triggerDownload(dataStr) {
+        const blob = new Blob([dataStr], { type: "application/json" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        const now = new Date();
+        const pad = (n) => n.toString().padStart(2, '0');
+        const timestamp = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+        a.download = `preference_backup_${timestamp}.json`;
+        a.click();
+        URL.revokeObjectURL(a.href);
     }
 
     function restorePreferences(event) {
@@ -313,6 +319,7 @@
         reader.onload = function(e) {
             try {
                 const importedPrefs = JSON.parse(e.target.result);
+                localStorage.setItem('e_jyotisha_preferences', JSON.stringify(importedPrefs));
                 fetch('/api/preferences', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(importedPrefs) })
                     .then(res => res.json())
                     .then(res => { alert("Preferences restored successfully!"); location.reload(); })
@@ -327,6 +334,7 @@
 
     function resetPreferences() {
         if (confirm("Are you sure you want to reset ALL settings to their default values?")) {
+            localStorage.removeItem('e_jyotisha_preferences');
             fetch('/api/preferences', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
                 .then(res => res.json())
                 .then(res => { alert("Preferences reset to defaults!"); location.reload(); })
@@ -360,6 +368,37 @@
     }
 
     async function init() {
+        // --- LOCAL STORAGE SYNC ---
+        const localPrefsStr = localStorage.getItem('e_jyotisha_preferences');
+        if (localPrefsStr) {
+            try {
+                const localPrefs = JSON.parse(localPrefsStr);
+                // Sync silently to backend (so Python knows the settings even if Render restarted)
+                fetch('/api/preferences', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: localPrefsStr }).catch(e=>console.log(e));
+                
+                // Update UI to match Local Storage overrides
+                const ids = ['default_location', 'default_lat', 'default_lon', 'default_tz', 'default_days', 'default_profile_name', 'default_ayanamsa', 'pdf_language'];
+                ids.forEach(id => {
+                    if(localPrefs[id] !== undefined && document.getElementById(id)) {
+                        document.getElementById(id).value = localPrefs[id];
+                    }
+                });
+
+                if(localPrefs['pdf_header_font']) document.getElementById('saved_pdf_header_font').value = localPrefs['pdf_header_font'];
+                if(localPrefs['pdf_body_font']) document.getElementById('saved_pdf_body_font').value = localPrefs['pdf_body_font'];
+
+                const sections = ['maasa', 'vaara', 'tithi', 'nakshatra', 'yoga', 'karana', 'tarabalam', 'export_columns', 'panchanga_columns', 'muhurtha_ui_columns'];
+                sections.forEach(sec => {
+                    if(localPrefs[sec]) {
+                        document.querySelectorAll(`input[name="${sec}"]`).forEach(cb => {
+                            cb.checked = localPrefs[sec].includes(cb.value);
+                        });
+                    }
+                });
+            } catch(e) { console.error("Local storage parse error", e); }
+        }
+        // -------------------------
+
         updateFontList(true);
         try {
             const res = await fetch('/static/cities_short.json');
