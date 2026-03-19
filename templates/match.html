@@ -71,6 +71,9 @@
                     </select>
                     <button class="small-btn" style="background: #27ae60; margin: 0;" onclick="saveIndividualProfile('b')">💾 Save</button>
                     <button class="small-btn" style="background: #c0392b; margin: 0;" onclick="deleteIndividualProfile('b')" title="Delete Profile">🗑️</button>
+                    <button class="small-btn" style="background: #3498db; margin: 0;" onclick="exportProfiles()" title="Backup Profiles">📥</button>
+                    <button class="small-btn" style="background: #f39c12; margin: 0;" onclick="document.getElementById('importProfilesFile').click()" title="Restore Profiles">📤</button>
+                    <input type="file" id="importProfilesFile" style="display: none;" accept=".json" onchange="importProfiles(event)">
                 </div>
                 <label>Name:</label>
                 <input type="text" id="bName" placeholder="Boy's Name">
@@ -409,6 +412,39 @@
                 document.getElementById(prefix + 'Lon').value = data.lon || '';
                 document.getElementById(prefix + 'Tz').value = data.tz || '';
             }
+        }
+
+        function exportProfiles() {
+            const profiles = localStorage.getItem('individual_profiles') || '{}';
+            const blob = new Blob([profiles], { type: "application/json" });
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            
+            const now = new Date();
+            const pad = (n) => n.toString().padStart(2, '0');
+            const timestamp = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+            
+            a.download = `Profiles_${timestamp}.json`;
+            a.click();
+            URL.revokeObjectURL(a.href);
+        }
+
+        function importProfiles(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    let existing = JSON.parse(localStorage.getItem('individual_profiles') || '{}');
+                    Object.assign(existing, imported);
+                    localStorage.setItem('individual_profiles', JSON.stringify(existing));
+                    alert("Profiles restored successfully!");
+                    loadAllProfiles();
+                } catch (err) { alert("Invalid JSON file. Cannot restore profiles."); }
+                event.target.value = "";
+            };
+            reader.readAsText(file);
         }
 
         async function calculateMatch() {
