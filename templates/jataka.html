@@ -543,7 +543,48 @@
             document.getElementById('longitudes').innerHTML = lonHtml;
             
             // Render Vimshottari Dasha Tree
-            // ... (Dasha rendering code remains the same)
+            let dashaHtml = `<div style="margin-bottom: 20px; font-size: 21px; font-weight: bold; color: #d35400; background: #fffcf9; padding: 12px; border: 1px solid #fdebd0; border-radius: 8px;">
+                Dasha Balance at Birth: <span style="color: #333;">${data.dasha_balance}</span>
+            </div>`;
+            
+            data.vimshottari.forEach(md => {
+                let mdClass = md.is_current ? 'border-color: #27ae60; background-color: #f0fdf4;' : 'border-color: #e1e8ed; background-color: #fdfefe;';
+                let mdText = md.is_current ? 'color: #27ae60; font-weight: bold;' : 'color: #8e44ad; font-weight: bold;';
+                let openAttr = md.is_current ? 'open' : '';
+                
+                dashaHtml += `<details ${openAttr} style="margin-bottom: 8px; border: 1px solid; border-radius: 8px; ${mdClass}">
+                    <summary style="cursor: pointer; font-size: 21px; outline: none; padding: 12px; ${mdText}">
+                        ${md.lord} Mahadasha &mdash; Ends: ${md.end} ${md.is_current ? ' 🌟 (Current)' : ''}
+                    </summary>
+                    <div style="margin-top: 5px; padding-left: 20px; margin-left: 20px; border-left: 2px dashed #bdc3c7; display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px;">`;
+                
+                md.antardashas.forEach(ad => {
+                    let adStyle = ad.is_current ? 'background: #d5f5e3; border: 1px solid #2ecc71;' : 'background: #f8f9fa; border: 1px solid #ecf0f1;';
+                    let adText = ad.is_current ? 'color: #27ae60; font-weight: bold;' : 'color: #333; font-weight: bold;';
+                    let adOpen = ad.is_current ? 'open' : '';
+                    
+                    dashaHtml += `<details ${adOpen} style="border-radius: 6px; ${adStyle}">
+                        <summary style="cursor: pointer; font-size: 18px; outline: none; padding: 10px; ${adText}">
+                            ${ad.lord} Antardasha &mdash; <span style="color: #7f8c8d; font-weight: normal;">Ends: ${ad.end}</span>
+                        </summary>
+                        <div style="margin-top: 5px; padding-left: 20px; margin-left: 15px; border-left: 2px dotted #bdc3c7; display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px;">`;
+                    
+                    if (ad.pratyantardashas) {
+                        ad.pratyantardashas.forEach(pd => {
+                            let pdStyle = pd.is_current ? 'color: #27ae60; font-weight: bold; background: #eafaf1; border-radius: 4px;' : 'color: #555;';
+                            dashaHtml += `<div style="display: flex; justify-content: space-between; font-size: 17px; padding: 4px 8px; ${pdStyle}">
+                                <span>↳ ${pd.lord} PD</span>
+                                <span style="color: #95a5a6;">${pd.end}</span>
+                            </div>`;
+                        });
+                    }
+                    
+                    dashaHtml += `</div></details>`;
+                });
+                
+                dashaHtml += `</div></details>`;
+            });
+            document.getElementById('dashaContainer').innerHTML = dashaHtml;
 
             // Render Ashtakavarga Tab Data
             // Render BAV Charts
