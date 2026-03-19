@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vedic Astrology Suite</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f9; color: #333; text-align: center; padding: 50px 20px; margin: 0; }
+        .container { max-width: 950px; margin: 0 auto; }
+        .logo-img { max-width: 140px; margin-bottom: 15px; border-radius: 50%; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 4px solid white; }
+        h1 { color: #2c3e50; font-size: 36px; margin-bottom: 10px; font-weight: bold; }
+        p.subtitle { color: #7f8c8d; font-size: 18px; margin-bottom: 50px; }
+        
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px; }
+        
+        .card { background: white; padding: 35px 20px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); text-decoration: none; color: inherit; display: flex; flex-direction: column; align-items: center; transition: all 0.3s ease; border-top: 5px solid transparent; cursor: pointer; }
+        .card:hover { transform: translateY(-8px); box-shadow: 0 12px 30px rgba(0,0,0,0.1); }
+        
+        .card.panchanga { border-top-color: #e67e22; }
+        .card.panchanga:hover h2 { color: #e67e22; }
+        
+        .card.match { border-top-color: #e74c3c; }
+        .card.match:hover h2 { color: #e74c3c; }
+        
+        .card.jataka { border-top-color: #8e44ad; }
+        .card.jataka:hover h2 { color: #8e44ad; }
+        
+        .card.settings { border-top-color: #3498db; }
+        .card.settings:hover h2 { color: #3498db; }
+        
+        .icon { font-size: 55px; margin-bottom: 20px; transition: transform 0.3s; }
+        .card:hover .icon { transform: scale(1.1); }
+        
+        h2 { margin: 0 0 15px 0; font-size: 22px; color: #2c3e50; transition: color 0.3s; }
+        .desc { font-size: 15px; color: #7f8c8d; line-height: 1.5; padding: 0 10px; }
+        
+        .footer { margin-top: 60px; color: #bdc3c7; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="/logo.png" alt="Logo" class="logo-img">
+        <h1>Vedic Astrology Suite</h1>
+        <p class="subtitle">A complete toolkit for Panchangam, Muhurtham, and Horoscope generation.</p>
+        
+        <div class="grid">
+            <a href="/jataka" class="card jataka"><div class="icon">📜</div><h2>e-JATAKA</h2><div class="desc">Instantly generate personal birth charts (D1 & D9), planetary longitudes, and Vimshottari Dasha.</div></a>
+            <a href="/match" class="card match"><div class="icon">💑</div><h2>e-MATCH</h2><div class="desc">Comprehensive Ashtakuta compatibility check, Doshas, and Navamsha evaluation for marriage.</div></a>
+            <a href="/panchanga" class="card panchanga"><div class="icon">🗓️</div><h2>e-PANCHANGA</h2><div class="desc">Generate daily Panchangam, search for auspicious dates, and calculate precision Muhurthams.</div></a>
+            <a href="/settings" class="card settings"><div class="icon">⚙️</div><h2>Settings</h2><div class="desc">Customize global preferences, default locations, Ayanamsa, and Pan Shudhi rules.</div></a>
+        </div>
+        
+        <div class="footer">
+            &copy; <script>document.write(new Date().getFullYear())</script> Vedic Astrology Suite | Built for precise computations.
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Preferences - Panchanga Shudhi</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background-color: #f4f6f9; color: #333; }
+        .container { max-width: 900px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 15px; }
+        .back-link { text-decoration: none; color: #007bff; font-weight: bold; font-size: 1.1em; }
+        .back-link:hover { text-decoration: underline; }
+        
+        /* Tabs Styling */
+        .tabs { display: flex; border-bottom: 2px solid #ddd; margin-bottom: 25px; }
+        .tab { padding: 12px 25px; cursor: pointer; border-bottom: 3px solid transparent; font-weight: bold; font-size: 1.1em; color: #666; transition: 0.3s; }
+        .tab:hover { color: #007bff; }
+        .tab.active { border-bottom-color: #007bff; color: #007bff; }
+        
+        .tab-content { display: none; animation: fadeIn 0.4s; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Checkbox Grid Sections */
+        details.settings-group { background: #fff; border: 1px solid #e2e6ea; border-radius: 8px; margin-bottom: 15px; padding: 5px 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); transition: 0.3s; }
+        summary.section-title { font-size: 1.15em; color: #0056b3; margin: 0; padding: 12px 0; cursor: pointer; user-select: none; font-weight: bold; list-style-position: inside; }
+        summary.section-title:hover { color: #003d82; }
+        details[open] summary.section-title { border-bottom: 1px dashed #ccc; margin-bottom: 15px; padding-bottom: 12px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin-bottom: 20px; }
+        label { cursor: pointer; font-size: 1em; display: flex; align-items: center; gap: 8px; background: #f8f9fa; padding: 8px 12px; border-radius: 4px; border: 1px solid #e9ecef; transition: 0.2s; }
+        label:hover { background: #e2e6ea; }
+        input[type="checkbox"] { transform: scale(1.2); }
+
+        .btn-save { background: #28a745; color: white; border: none; padding: 12px 25px; cursor: pointer; font-size: 1.1em; border-radius: 5px; font-weight: bold; margin-top: 20px; display: block; width: 100%; transition: 0.3s;}
+        .btn-save:hover { background: #218838; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-bar">
+        <h2>⚙️ Settings & Preferences</h2>
+        <div style="display: flex; gap: 15px; align-items: center;">
+            <a href="/" title="Home" style="font-size: 28px; text-decoration: none; cursor: pointer;">🏠</a>
+            <a href="/panchanga" title="e-Panchanga" style="font-size: 28px; text-decoration: none; cursor: pointer;">🗓️</a>
+            <a href="/jataka" title="e-Jataka (Horoscope)" style="font-size: 28px; text-decoration: none; cursor: pointer;">📜</a>
+            <a href="/match" title="Marriage Matching" style="font-size: 28px; text-decoration: none; cursor: pointer;">💑</a>
+        </div>
+    </div>
+
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab(this, 'generalSettings')">General</div>
+        <div class="tab" onclick="switchTab(this, 'shudhi')">Panchanga Shudhi</div>
+        <div class="tab" onclick="switchTab(this, 'muhurthaSettings')">Muhurtha</div>
+    </div>
+
+    <div id="generalSettings" class="tab-content active">
+        <p style="color: #555;">General Application Settings.</p>
+        
+        <details class="settings-group" open>
+            <summary class="section-title">🌍 Default Location</summary>
+            <div style="padding: 10px 20px 20px 20px;">
+                <label style="display:block; border:none; background:none; padding:0; margin-bottom: 8px;">Choose Default Place:</label>
+                <input list="cityList" id="default_location" value="{{ prefs.get('default_location', 'Bengaluru, Karnataka') }}" placeholder="Start typing city name..." oninput="onCitySelect()" style="width: 100%; max-width: 400px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 1em;">
+                <datalist id="cityList"></datalist>
+
+                <details style="margin-top: 15px; background: #f9f9f9; padding: 10px; border-radius: 8px; border: 1px solid #ddd; max-width: 380px;">
+                    <summary style="cursor: pointer; color: #2980b9; font-weight: bold;">Manual Entry (Lat/Lon/Tz)</summary>
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <div style="flex:1;"><label style="margin-top: 0; background:none; border:none; padding:0;">Lat:</label><input type="text" id="default_lat" value="{{ prefs.get('default_lat', 12.9716) }}" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:5px; box-sizing: border-box;"></div>
+                        <div style="flex:1;"><label style="margin-top: 0; background:none; border:none; padding:0;">Lon:</label><input type="text" id="default_lon" value="{{ prefs.get('default_lon', 77.5946) }}" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:5px; box-sizing: border-box;"></div>
+                    </div>
+                    <label style="background:none; border:none; padding:0; margin-top: 10px; display:block;">Timezone Offset:</label>
+                    <input type="text" id="default_tz" value="{{ prefs.get('default_tz', 5.5) }}" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:5px; box-sizing: border-box;">
+                </details>
+                
+                <div style="display: flex; gap: 20px; margin-top: 20px; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 150px;">
+                        <label style="display:block; border:none; background:none; padding:0; margin-bottom: 8px;">Default Number of Days:</label>
+                        <input type="number" id="default_days" value="{{ prefs.get('default_days', 10) }}" min="1" max="365" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 1em; box-sizing: border-box;">
+                    </div>
+                    <div style="flex: 1; min-width: 150px;">
+                        <label style="display:block; border:none; background:none; padding:0; margin-bottom: 8px;">Default Profile/Export Name:</label>
+                        <input type="text" id="default_profile_name" value="{{ prefs.get('default_profile_name', 'Panchanga') }}" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 1em; box-sizing: border-box;">
+                    </div>
+                    <div style="flex: 1; min-width: 150px;">
+                        <label style="display:block; border:none; background:none; padding:0; margin-bottom: 8px;">Ayanamsa System:</label>
+                        <select id="default_ayanamsa" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 1em; box-sizing: border-box;">
+                            <option value="Lahiri" {% if prefs.get('default_ayanamsa', 'Lahiri') == 'Lahiri' %}selected{% endif %}>Lahiri (Chitra Paksha)</option>
+                            <option value="Raman" {% if prefs.get('default_ayanamsa', 'Lahiri') == 'Raman' %}selected{% endif %}>Raman</option>
+                            <option value="KP" {% if prefs.get('default_ayanamsa', 'Lahiri') == 'KP' %}selected{% endif %}>KP (Krishnamurti)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </details>
+
+        <button class="btn-save" onclick="savePreferences()" style="margin-bottom: 20px;">💾 Save General Settings</button>
+
+        <details class="settings-group">
+            <summary class="section-title">🛠️ Preferences Management</summary>
+            <div style="padding: 10px 20px 20px 20px; display: flex; gap: 15px; flex-wrap: wrap;">
+                <button class="btn-save" style="background: #3498db; margin-top: 0; width: auto;" onclick="backupPreferences()">📥 Backup</button>
+                <button class="btn-save" style="background: #f39c12; margin-top: 0; width: auto;" onclick="document.getElementById('importPrefsFile').click()">📤 Restore</button>
+                <button class="btn-save" style="background: #e74c3c; margin-top: 0; width: auto;" onclick="resetPreferences()">⚠️ Reset to Defaults</button>
+                <input type="file" id="importPrefsFile" style="display: none;" accept=".json" onchange="restorePreferences(event)">
+            </div>
+        </details>
+    </div>
+
+    <div id="shudhi" class="tab-content">
+        <p style="color: #555;">Select the elements you consider as <b>Good/Auspicious</b> (శుభ ప్రదమైనవి). The selected ones will be highlighted dynamically in the main application table.</p>
+        
+        <details class="settings-group" open>
+            <summary class="section-title">🌐 Localization (PDF Export)</summary>
+            <div style="padding: 10px 20px 20px 20px;">
+                <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 150px;">
+                        <label style="display:block; border:none; background:none; padding:0; margin-bottom: 8px;">PDF Report Language:</label>
+                        <select id="pdf_language" onchange="updateFontList()" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 1em; box-sizing: border-box;">
+                            <option value="en" {% if prefs.get('pdf_language', 'en') == 'en' %}selected{% endif %}>English</option>
+                            <option value="te" {% if prefs.get('pdf_language', 'en') == 'te' %}selected{% endif %}>Telugu (తెలుగు)</option>
+                            <option value="kn" {% if prefs.get('pdf_language', 'en') == 'kn' %}selected{% endif %}>Kannada (ಕನ್ನಡ)</option>
+                            <option value="sa" {% if prefs.get('pdf_language', 'en') == 'sa' %}selected{% endif %}>Sanskrit (संस्कृतम्)</option>
+                        </select>
+                    </div>
+                    <div style="flex: 1; min-width: 150px;">
+                        <label style="display:block; border:none; background:none; padding:0; margin-bottom: 8px;">Header Font:</label>
+                        <input type="hidden" id="saved_pdf_header_font" value="{{ prefs.get('pdf_header_font', prefs.get('pdf_font', '')) }}">
+                        <select id="pdf_header_font" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 1em; box-sizing: border-box;">
+                            <option value="">Default</option>
+                        </select>
+                    </div>
+                    <div style="flex: 1; min-width: 150px;">
+                        <label style="display:block; border:none; background:none; padding:0; margin-bottom: 8px;">Body Font:</label>
+                        <input type="hidden" id="saved_pdf_body_font" value="{{ prefs.get('pdf_body_font', prefs.get('pdf_font', '')) }}">
+                        <select id="pdf_body_font" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 1em; box-sizing: border-box;">
+                            <option value="">Default</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </details>
+        
+        <details class="settings-group">
+            <summary class="section-title">📊 Display Columns (Panchanga Table)</summary>
+            <div class="grid">
+                {% for col in panchanga_columns %}
+                <label><input type="checkbox" name="panchanga_columns" value="{{ col }}" {% if col in prefs.get('panchanga_columns', panchanga_columns) %}checked{% endif %}> {{ col | replace('_', ' ') }}</label>
+                {% endfor %}
+            </div>
+        </details>
+
+        <details class="settings-group">
+            <summary class="section-title">📅 Maasa (Lunar Month)</summary>
+            <div class="grid">
+                {% for m in maasas %}
+                <label><input type="checkbox" name="maasa" value="{{ m }}" {% if m in prefs.get('maasa', []) %}checked{% endif %}> {{ m }}</label>
+                {% endfor %}
+            </div>
+        </details>
+
+        <details class="settings-group">
+            <summary class="section-title">📅 Vaara (Weekday)</summary>
+            <div class="grid">
+                {% for v in vaaras %}
+                <label><input type="checkbox" name="vaara" value="{{ v }}" {% if v in prefs.get('vaara', []) %}checked{% endif %}> {{ v }}</label>
+                {% endfor %}
+            </div>
+        </details>
+
+        <details class="settings-group">
+            <summary class="section-title">🌙 Tithi</summary>
+            <div class="grid">
+                {% for t in tithis %}
+                <label><input type="checkbox" name="tithi" value="{{ t }}" {% if t in prefs.get('tithi', []) %}checked{% endif %}> {{ t }}</label>
+                {% endfor %}
+            </div>
+        </details>
+
+        <details class="settings-group">
+            <summary class="section-title">⭐ Nakshatra</summary>
+            <div class="grid">
+                {% for n in nakshatras %}
+                <label><input type="checkbox" name="nakshatra" value="{{ n }}" {% if n in prefs.get('nakshatra', []) %}checked{% endif %}> {{ n }}</label>
+                {% endfor %}
+            </div>
+        </details>
+
+        <details class="settings-group">
+            <summary class="section-title">🧘 Yoga</summary>
+            <div class="grid">
+                {% for y in yogas %}
+                <label><input type="checkbox" name="yoga" value="{{ y }}" {% if y in prefs.get('yoga', []) %}checked{% endif %}> {{ y }}</label>
+                {% endfor %}
+            </div>
+        </details>
+
+        <details class="settings-group">
+            <summary class="section-title">⏳ Karana</summary>
+            <div class="grid">
+                {% for k in karanas %}
+                <label><input type="checkbox" name="karana" value="{{ k }}" {% if k in prefs.get('karana', []) %}checked{% endif %}> {{ k }}</label>
+                {% endfor %}
+            </div>
+        </details>
+
+        <details class="settings-group">
+            <summary class="section-title">✨ Tarabalam</summary>
+            <div class="grid">
+                {% for tara in taras %}
+                <label><input type="checkbox" name="tarabalam" value="{{ tara }}" {% if tara in prefs.get('tarabalam', []) %}checked{% endif %}> {{ tara }}</label>
+                {% endfor %}
+            </div>
+        </details>
+
+        <button class="btn-save" onclick="savePreferences()">💾 Save Panchanga Shudhi</button>
+    </div>
+
+    <div id="muhurthaSettings" class="tab-content">
+        <p style="color: #555;">Customize columns for Display and Exporting the Muhurtha table.</p>
+        
+        <details class="settings-group">
+            <summary class="section-title">📊 Display Columns (Muhurtha UI Table)</summary>
+            <div class="grid">
+                {% for col in muhurtha_ui_columns %}
+                <label><input type="checkbox" name="muhurtha_ui_columns" value="{{ col }}" {% if col in prefs.get('muhurtha_ui_columns', muhurtha_ui_columns) %}checked{% endif %}> {{ col | replace('_', ' ') }}</label>
+                {% endfor %}
+            </div>
+        </details>
+
+        <details class="settings-group">
+            <summary class="section-title">📄 Export Columns (Muhurtha PDF/CSV)</summary>
+            <div class="grid">
+                {% for col in export_columns %}
+                <label><input type="checkbox" name="export_columns" value="{{ col }}" {% if col in prefs.get('export_columns', export_columns) %}checked{% endif %}> {{ col | replace('_', ' ') }}</label>
+                {% endfor %}
+            </div>
+        </details>
+
+        <button class="btn-save" onclick="savePreferences()">💾 Save Muhurtha Settings</button>
+    </div>
+</div>
+
+<script>
+    let allCities = [];
+    let dynamicCities = [];
+    let searchTimeout = null;
+
+    function switchTab(element, tabId) {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        element.classList.add('active');
+        document.getElementById(tabId).classList.add('active');
+    }
+
+    function savePreferences() {
+        const sections = ['maasa', 'vaara', 'tithi', 'nakshatra', 'yoga', 'karana', 'tarabalam', 'export_columns', 'panchanga_columns', 'muhurtha_ui_columns'];
+        const data = {};
+        sections.forEach(sec => {
+            data[sec] = Array.from(document.querySelectorAll(`input[name="${sec}"]:checked`)).map(cb => cb.value);
+        });
+
+        const locInput = document.getElementById('default_location');
+        const latInput = document.getElementById('default_lat');
+        const lonInput = document.getElementById('default_lon');
+        const tzInput = document.getElementById('default_tz');
+        const daysInput = document.getElementById('default_days');
+        const profileNameInput = document.getElementById('default_profile_name');
+        const ayanamsaInput = document.getElementById('default_ayanamsa');
+        const langInput = document.getElementById('pdf_language');
+        const hFontInput = document.getElementById('pdf_header_font');
+        const bFontInput = document.getElementById('pdf_body_font');
+
+        if (locInput) data['default_location'] = locInput.value.trim();
+        if (latInput && !isNaN(parseFloat(latInput.value))) data['default_lat'] = parseFloat(latInput.value);
+        if (lonInput && !isNaN(parseFloat(lonInput.value))) data['default_lon'] = parseFloat(lonInput.value);
+        if (tzInput && !isNaN(parseFloat(tzInput.value))) data['default_tz'] = parseFloat(tzInput.value);
+        if (daysInput && !isNaN(parseInt(daysInput.value))) data['default_days'] = parseInt(daysInput.value);
+        if (profileNameInput) data['default_profile_name'] = profileNameInput.value.trim() || 'Panchanga';
+        if (ayanamsaInput) data['default_ayanamsa'] = ayanamsaInput.value;
+        if (langInput) data['pdf_language'] = langInput.value;
+        if (hFontInput) data['pdf_header_font'] = hFontInput.value;
+        if (bFontInput) data['pdf_body_font'] = bFontInput.value;
+
+        fetch('/api/preferences', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
+            .then(res => res.json()).then(res => { alert(res.message); }).catch(err => { alert('Error saving preferences'); });
+    }
+
+    function backupPreferences() {
+        fetch('/api/preferences')
+            .then(res => res.json())
+            .then(data => {
+                const dataStr = JSON.stringify(data, null, 4);
+                const blob = new Blob([dataStr], { type: "application/json" });
+                const a = document.createElement("a");
+                a.href = URL.createObjectURL(blob);
+                
+                const now = new Date();
+                const pad = (n) => n.toString().padStart(2, '0');
+                const timestamp = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+                a.download = `preference_backup_${timestamp}.json`;
+                a.click();
+                URL.revokeObjectURL(a.href);
+            })
+            .catch(err => alert('Error backing up preferences.'));
+    }
+
+    function restorePreferences(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const importedPrefs = JSON.parse(e.target.result);
+                fetch('/api/preferences', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(importedPrefs) })
+                    .then(res => res.json())
+                    .then(res => { alert("Preferences restored successfully!"); location.reload(); })
+                    .catch(err => alert('Error saving restored preferences.'));
+            } catch (err) {
+                alert("Invalid JSON file. Cannot restore preferences.");
+            }
+            event.target.value = "";
+        };
+        reader.readAsText(file);
+    }
+
+    function resetPreferences() {
+        if (confirm("Are you sure you want to reset ALL settings to their default values?")) {
+            fetch('/api/preferences', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
+                .then(res => res.json())
+                .then(res => { alert("Preferences reset to defaults!"); location.reload(); })
+                .catch(err => alert('Error resetting preferences.'));
+        }
+    }
+
+    async function updateFontList(isInit = false) {
+        const lang = document.getElementById('pdf_language').value;
+        const hFontSelect = document.getElementById('pdf_header_font');
+        const bFontSelect = document.getElementById('pdf_body_font');
+        hFontSelect.innerHTML = '<option value="">Default</option>';
+        bFontSelect.innerHTML = '<option value="">Default</option>';
+        try {
+            const res = await fetch(`/api/fonts/${lang}`);
+            const fonts = await res.json();
+            fonts.forEach(f => {
+                const opt = document.createElement('option');
+                opt.value = f;
+                opt.textContent = f;
+                hFontSelect.appendChild(opt.cloneNode(true));
+                bFontSelect.appendChild(opt);
+            });
+            if (isInit) {
+                const savedHFont = document.getElementById('saved_pdf_header_font').value;
+                const savedBFont = document.getElementById('saved_pdf_body_font').value;
+                if (savedHFont) hFontSelect.value = savedHFont;
+                if (savedBFont) bFontSelect.value = savedBFont;
+            }
+        } catch(e) { console.error("Error fetching fonts", e); }
+    }
+
+    async function init() {
+        updateFontList(true);
+        try {
+            const res = await fetch('/static/cities_short.json');
+            const data = await res.json();
+            allCities = data.cities;
+            
+            const list = document.getElementById('cityList');
+            allCities.forEach(city => {
+                const opt = document.createElement('option');
+                opt.value = `${city.name}, ${city.state}`;
+                list.appendChild(opt);
+            });
+        } catch (e) { console.error("JSON Error:", e); }
+    }
+
+    async function onCitySelect() {
+        const val = document.getElementById('default_location').value;
+        const list = document.getElementById('cityList');
+
+        if (val.length === 0) {
+            list.innerHTML = '';
+            allCities.forEach(city => {
+                const opt = document.createElement('option');
+                opt.value = `${city.name}, ${city.state}`;
+                list.appendChild(opt);
+            });
+            return;
+        }
+        
+        let selectedCity = allCities.find(c => `${c.name}, ${c.state}` === val);
+        let isDynamic = false;
+        
+        if (!selectedCity) {
+            selectedCity = dynamicCities.find(c => c.display_name === val);
+            isDynamic = true;
+        }
+
+        if (selectedCity) {
+            document.getElementById('default_lat').value = selectedCity.lat;
+            document.getElementById('default_lon').value = selectedCity.lon;
+            
+            if (isDynamic) {
+                try {
+                    document.getElementById('default_tz').value = "Loading...";
+                    const tzRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${selectedCity.lat}&longitude=${selectedCity.lon}&timezone=auto`);
+                    const tzData = await tzRes.json();
+                    if (tzData.utc_offset_seconds !== undefined) {
+                        document.getElementById('default_tz').value = tzData.utc_offset_seconds / 3600;
+                    } else { document.getElementById('default_tz').value = 5.5; }
+                } catch (e) {
+                    console.error("Timezone fetch failed, using fallback 5.5", e);
+                    document.getElementById('default_tz').value = 5.5;
+                }
+            } else { document.getElementById('default_tz').value = selectedCity.tz; }
+            return;
+        }
+
+        if (val.length < 3) return;
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(async () => {
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(val)}&limit=7`, { headers: { 'Accept-Language': 'en' } });
+                if (!res.ok) throw new Error("API Network error");
+                const data = await res.json();
+                if (data && data.length > 0) {
+                    dynamicCities = data.map(item => ({ display_name: item.display_name, lat: item.lat, lon: item.lon }));
+                    list.innerHTML = '';
+                    dynamicCities.forEach(city => {
+                        const opt = document.createElement('option');
+                        opt.value = city.display_name;
+                        list.appendChild(opt);
+                    });
+                }
+            } catch (e) { console.error("OpenStreetMap fetch failed", e); }
+        }, 600);
+    }
+
+    window.onload = init;
+</script>
+</body>
+</html>

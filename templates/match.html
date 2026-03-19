@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>e-MATCH</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background-color: #f4f7f9; color: #333; text-align: center; }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; background: white; padding: 15px 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.1); margin: 0 auto; text-align: left; max-width: 1100px; width: 100%; box-sizing: border-box; }
+        h1 { color: #2c3e50; font-size: 24px; margin: 0; }
+        .row { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 20px; }
+        .col { flex: 1; min-width: 300px; background: #fafafa; padding: 20px; border-radius: 10px; border: 1px solid #eee; }
+        label { display: block; margin-top: 10px; font-weight: bold; color: #555; font-size: 14px; }
+        input, select { padding: 10px; width: 100%; box-sizing: border-box; border: 1px solid #ccc; border-radius: 6px; margin-top: 5px; font-family: inherit; }
+        button.action-btn { background: #e67e22; color: white; border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; transition: 0.2s; width: 100%; margin-top: 20px; }
+        button.action-btn:hover { background: #d35400; }
+        button.small-btn { padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; color: white; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 10px rgba(0,0,0,0.05); }
+        th, td { border: 1px solid #eee; padding: 12px; text-align: center; }
+        th { background: #2c3e50; color: white; }
+        .score-row { font-weight: bold; font-size: 18px; background: #eafaf1; color: #27ae60; }
+        
+        .chart-container { display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 1fr); width: 350px; height: 350px; border: 2px solid #8e44ad; margin: 0 auto; background: #fff; }
+        .chart-cell { border: 1px solid #8e44ad; padding: 2px; font-weight: bold; position: relative; color: #2c3e50; display: flex; justify-content: center; align-items: center; overflow: hidden; box-sizing: border-box; }
+        .chart-cell > div { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; align-content: center; gap: 2px 4px; width: 100%; height: 100%; overflow: hidden; }
+        .chart-cell > div > span { font-size: 24px; line-height: 1; }
+        .chart-cell > div:has(> span:nth-child(3)) > span { font-size: 22px; }
+        .chart-cell > div:has(> span:nth-child(4)) > span { font-size: 18px; }
+        .chart-cell > div:has(> span:nth-child(5)) > span { font-size: 16px; }
+        .chart-cell > div:has(> span:nth-child(6)) > span { font-size: 14px; }
+        .chart-cell > div:has(> span:nth-child(7)) > span { font-size: 12px; }
+        .chart-center { grid-column: span 2; grid-row: span 2; border: 1px solid #8e44ad; display: flex; align-items: center; justify-content: center; font-weight: bold; background: #f9f0ff; color: #8e44ad; flex-direction: column; }
+        .planet-Lg { color: #c0392b; text-decoration: underline; }
+        
+        /* Loading Spinner */
+        #loadingOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); z-index: 10001; justify-content: center; align-items: center; flex-direction: column; backdrop-filter: blur(2px); }
+        .spinner { border: 6px solid #f3f3f3; border-top: 6px solid #e67e22; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 15px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <div id="loadingOverlay">
+        <div class="spinner"></div>
+        <h3 style="color: #2c3e50; margin: 0; font-weight: bold;">Matching Horoscopes...</h3>
+    </div>
+
+    <div class="top-bar">
+        <h1>💑 e-MATCH</h1>
+        <div style="display: flex; gap: 15px; align-items: center;">
+            <a href="/" title="Home" style="font-size: 28px; text-decoration: none; cursor: pointer;">🏠</a>
+            <a href="/panchanga" title="e-Panchanga" style="font-size: 28px; text-decoration: none; cursor: pointer;">🗓️</a>
+            <a href="/jataka" title="e-Jataka (Horoscope)" style="font-size: 28px; text-decoration: none; cursor: pointer;">📜</a>
+            <a href="/settings" title="Settings" style="font-size: 28px; text-decoration: none; cursor: pointer;">⚙️</a>
+        </div>
+    </div>
+
+    <div class="card">
+
+        <!-- Input Forms -->
+        <div class="row">
+            <!-- Boy Details -->
+            <div class="col" style="border-top: 4px solid #3498db;">
+                <h3 style="margin-top: 0; color: #2980b9;">👦 Boy Details</h3>
+                <div style="display: flex; gap: 10px; margin-bottom: 15px; align-items: center; background: #ebf5fb; padding: 10px; border-radius: 5px; border: 1px solid #d6eaf8;">
+                    <select id="bProfileSelect" onchange="loadIndividualProfile('b')" style="margin:0; flex: 1; padding: 8px;">
+                        <option value="">-- Load Profile --</option>
+                    </select>
+                    <button class="small-btn" style="background: #27ae60; margin: 0;" onclick="saveIndividualProfile('b')">💾 Save</button>
+                    <button class="small-btn" style="background: #c0392b; margin: 0;" onclick="deleteIndividualProfile('b')" title="Delete Profile">🗑️</button>
+                </div>
+                <label>Name:</label>
+                <input type="text" id="bName" placeholder="Boy's Name">
+                
+                <div style="display: flex; gap: 10px;">
+                    <div style="flex: 1;"><label>Date of Birth:</label><input type="date" id="bDate"></div>
+                    <div style="flex: 1;"><label>Time of Birth:</label><input type="time" id="bTime" value="12:00:00" step="1"></div>
+                </div>
+                
+                <label>Place of Birth:</label>
+                <input list="cityList" id="bCity" placeholder="Type city name..." oninput="onCitySelect('b')">
+                
+                <details style="margin-top: 10px; font-size: 13px;">
+                    <summary style="cursor: pointer; color: #7f8c8d;">Manual Coordinates</summary>
+                    <div style="display: flex; gap: 5px; margin-top: 5px;">
+                        <input type="text" id="bLat" placeholder="Lat">
+                        <input type="text" id="bLon" placeholder="Lon">
+                        <input type="text" id="bTz" placeholder="Tz">
+                    </div>
+                </details>
+            </div>
+
+            <!-- Girl Details -->
+            <div class="col" style="border-top: 4px solid #e74c3c;">
+                <h3 style="margin-top: 0; color: #c0392b;">👧 Girl Details</h3>
+                <div style="display: flex; gap: 10px; margin-bottom: 15px; align-items: center; background: #fdedec; padding: 10px; border-radius: 5px; border: 1px solid #fadbd8;">
+                    <select id="gProfileSelect" onchange="loadIndividualProfile('g')" style="margin:0; flex: 1; padding: 8px;">
+                        <option value="">-- Load Profile --</option>
+                    </select>
+                    <button class="small-btn" style="background: #27ae60; margin: 0;" onclick="saveIndividualProfile('g')">💾 Save</button>
+                    <button class="small-btn" style="background: #c0392b; margin: 0;" onclick="deleteIndividualProfile('g')" title="Delete Profile">🗑️</button>
+                </div>
+                <label>Name:</label>
+                <input type="text" id="gName" placeholder="Girl's Name">
+                
+                <div style="display: flex; gap: 10px;">
+                    <div style="flex: 1;"><label>Date of Birth:</label><input type="date" id="gDate"></div>
+                    <div style="flex: 1;"><label>Time of Birth:</label><input type="time" id="gTime" value="12:00:00" step="1"></div>
+                </div>
+                
+                <label>Place of Birth:</label>
+                <input list="cityList" id="gCity" placeholder="Type city name..." oninput="onCitySelect('g')">
+                
+                <details style="margin-top: 10px; font-size: 13px;">
+                    <summary style="cursor: pointer; color: #7f8c8d;">Manual Coordinates</summary>
+                    <div style="display: flex; gap: 5px; margin-top: 5px;">
+                        <input type="text" id="gLat" placeholder="Lat">
+                        <input type="text" id="gLon" placeholder="Lon">
+                        <input type="text" id="gTz" placeholder="Tz">
+                    </div>
+                </details>
+            </div>
+        </div>
+        <datalist id="cityList"></datalist>
+
+        <button class="action-btn" onclick="calculateMatch()">⚖️ Calculate Ashtakuta Match</button>
+    </div>
+
+    <!-- Results Area -->
+    <div class="card" id="resultArea" style="display: none; margin-top: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h2 style="color: #2c3e50; margin: 0;">Astrological Compatibility Results</h2>
+            <div>
+                <button class="small-btn" style="background: #d35400; padding: 10px 20px; font-size: 15px;" onclick="exportMatchPDF('ashtakuta')">📄 Ashtakuta PDF</button>
+                <button class="small-btn" style="background: #8e44ad; padding: 10px 20px; font-size: 15px; margin-left: 10px;" onclick="exportMatchPDF('full')">📄 Full PDF</button>
+            </div>
+        </div>
+        <table id="matchTable">
+            <thead>
+                <tr>
+                    <th>Koota (Factor)</th>
+                    <th id="thBoyName" style="color: #3498db;">Boy</th>
+                    <th id="thGirlName" style="color: #e74c3c;">Girl</th>
+                    <th>Max Points</th>
+                    <th>Obtained Points</th>
+                </tr>
+            </thead>
+            <tbody id="matchBody"></tbody>
+        </table>
+        
+        <div id="matchExceptions" style="display: none; background: #fff3cd; padding: 15px; border-radius: 8px; border: 1px solid #ffeeba; margin-top: 15px;"></div>
+
+        <div style="margin-top: 20px; text-align: left; background: #fdfefe; padding: 15px; border-radius: 8px; border: 1px solid #e1e8ed;">
+            <label style="font-weight: bold; color: #2c3e50; font-size: 16px; display: block; margin-top: 0;">✍️ Astrologer's Notes (Optional):</label>
+            <textarea id="astrologerNotes" rows="3" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; margin-top: 10px; font-family: inherit; resize: vertical; box-sizing: border-box;" placeholder="Enter custom notes, remedies, or conclusions for the PDF report..."></textarea>
+        </div>
+
+        <div style="margin-top: 30px; display: flex; justify-content: center; gap: 40px; flex-wrap: wrap;">
+            <!-- Boy Chart -->
+            <div style="display: flex; flex-direction: column; gap: 30px;">
+                <div>
+                    <h3 style="text-align: center; color: #2980b9; margin-top: 0;">👦 Boy Rasi (D1)</h3>
+                    <div class="chart-container" style="border-color: #3498db;">
+                        <div class="chart-cell" style="border-color: #3498db;"><div id="b-pl-11"></div></div>
+                        <div class="chart-cell" style="border-color: #3498db;"><div id="b-pl-0"></div></div>
+                        <div class="chart-cell" style="border-color: #3498db;"><div id="b-pl-1"></div></div>
+                        <div class="chart-cell" style="border-color: #3498db;"><div id="b-pl-2"></div></div>
+                        <div class="chart-cell" style="border-color: #3498db;"><div id="b-pl-10"></div></div>
+                        <div class="chart-center" style="border-color: #3498db; background: #ebf5fb; color: #2980b9;">
+                            <span id="bNakText" style="font-size: 18px;"></span>
+                            <span id="bRasiText" style="font-size: 18px;"></span>
+                        </div>
+                        <div class="chart-cell" style="border-color: #3498db;"><div id="b-pl-3"></div></div>
+                        <div class="chart-cell" style="border-color: #3498db;"><div id="b-pl-9"></div></div>
+                        <div class="chart-cell" style="border-color: #3498db;"><div id="b-pl-4"></div></div>
+                        <div class="chart-cell" style="border-color: #3498db;"><div id="b-pl-8"></div></div>
+                        <div class="chart-cell" style="border-color: #3498db;"><div id="b-pl-7"></div></div>
+                        <div class="chart-cell" style="border-color: #3498db;"><div id="b-pl-6"></div></div>
+                        <div class="chart-cell" style="border-color: #3498db;"><div id="b-pl-5"></div></div>
+                    </div>
+                </div>
+                <div>
+                    <h3 style="text-align: center; color: #2980b9; margin-top: 0;">👦 Boy Navamsha (D9)</h3>
+                    <div class="chart-container" style="border-color: #3498db;">
+                        <div class="chart-cell" style="border-color: #3498db;"><div id="b-d9-pl-11"></div></div>
+                        <div class="chart-cell" style="border-color: #3498db;"><div id="b-d9-pl-0"></div></div>
+                        <div class="chart-cell" style="border-color: #3498db;"><div id="b-d9-pl-1"></div></div>
+                        <div class="chart-cell" style="border-color: #3498db;"><div id="b-d9-pl-2"></div></div>
+                        <div class="chart-cell" style="border-color: #3498db;"><div id="b-d9-pl-10"></div></div>
+                        <div class="chart-center" style="border-color: #3498db; background: #ebf5fb; color: #2980b9;">
+                            <span style="font-size: 19px; font-weight: bold;">Navamsha</span>
+                        </div>
+                        <div class="chart-cell" style="border-color: #3498db;"><div id="b-d9-pl-3"></div></div>
+                        <div class="chart-cell" style="border-color: #3498db;"><div id="b-d9-pl-9"></div></div>
+                        <div class="chart-cell" style="border-color: #3498db;"><div id="b-d9-pl-4"></div></div>
+                        <div class="chart-cell" style="border-color: #3498db;"><div id="b-d9-pl-8"></div></div>
+                        <div class="chart-cell" style="border-color: #3498db;"><div id="b-d9-pl-7"></div></div>
+                        <div class="chart-cell" style="border-color: #3498db;"><div id="b-d9-pl-6"></div></div>
+                        <div class="chart-cell" style="border-color: #3498db;"><div id="b-d9-pl-5"></div></div>
+                    </div>
+                </div>
+                <div id="b-longitudes" style="margin-top: -10px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 15px; font-size: 14px; background: white; padding: 15px; border-radius: 8px; border: 1px solid #3498db; box-shadow: 0 2px 5px rgba(0,0,0,0.05);"></div>
+            </div>
+
+            <!-- Girl Chart -->
+            <div style="display: flex; flex-direction: column; gap: 30px;">
+                <div>
+                    <h3 style="text-align: center; color: #c0392b; margin-top: 0;">👧 Girl Rasi (D1)</h3>
+                    <div class="chart-container" style="border-color: #e74c3c;">
+                        <div class="chart-cell" style="border-color: #e74c3c;"><div id="g-pl-11"></div></div>
+                        <div class="chart-cell" style="border-color: #e74c3c;"><div id="g-pl-0"></div></div>
+                        <div class="chart-cell" style="border-color: #e74c3c;"><div id="g-pl-1"></div></div>
+                        <div class="chart-cell" style="border-color: #e74c3c;"><div id="g-pl-2"></div></div>
+                        <div class="chart-cell" style="border-color: #e74c3c;"><div id="g-pl-10"></div></div>
+                        <div class="chart-center" style="border-color: #e74c3c; background: #fdedec; color: #c0392b;">
+                            <span id="gNakText" style="font-size: 18px;"></span>
+                            <span id="gRasiText" style="font-size: 18px;"></span>
+                        </div>
+                        <div class="chart-cell" style="border-color: #e74c3c;"><div id="g-pl-3"></div></div>
+                        <div class="chart-cell" style="border-color: #e74c3c;"><div id="g-pl-9"></div></div>
+                        <div class="chart-cell" style="border-color: #e74c3c;"><div id="g-pl-4"></div></div>
+                        <div class="chart-cell" style="border-color: #e74c3c;"><div id="g-pl-8"></div></div>
+                        <div class="chart-cell" style="border-color: #e74c3c;"><div id="g-pl-7"></div></div>
+                        <div class="chart-cell" style="border-color: #e74c3c;"><div id="g-pl-6"></div></div>
+                        <div class="chart-cell" style="border-color: #e74c3c;"><div id="g-pl-5"></div></div>
+                    </div>
+                </div>
+                <div>
+                    <h3 style="text-align: center; color: #c0392b; margin-top: 0;">👧 Girl Navamsha (D9)</h3>
+                    <div class="chart-container" style="border-color: #e74c3c;">
+                        <div class="chart-cell" style="border-color: #e74c3c;"><div id="g-d9-pl-11"></div></div>
+                        <div class="chart-cell" style="border-color: #e74c3c;"><div id="g-d9-pl-0"></div></div>
+                        <div class="chart-cell" style="border-color: #e74c3c;"><div id="g-d9-pl-1"></div></div>
+                        <div class="chart-cell" style="border-color: #e74c3c;"><div id="g-d9-pl-2"></div></div>
+                        <div class="chart-cell" style="border-color: #e74c3c;"><div id="g-d9-pl-10"></div></div>
+                        <div class="chart-center" style="border-color: #e74c3c; background: #fdedec; color: #c0392b;">
+                            <span style="font-size: 19px; font-weight: bold;">Navamsha</span>
+                        </div>
+                        <div class="chart-cell" style="border-color: #e74c3c;"><div id="g-d9-pl-3"></div></div>
+                        <div class="chart-cell" style="border-color: #e74c3c;"><div id="g-d9-pl-9"></div></div>
+                        <div class="chart-cell" style="border-color: #e74c3c;"><div id="g-d9-pl-4"></div></div>
+                        <div class="chart-cell" style="border-color: #e74c3c;"><div id="g-d9-pl-8"></div></div>
+                        <div class="chart-cell" style="border-color: #e74c3c;"><div id="g-d9-pl-7"></div></div>
+                        <div class="chart-cell" style="border-color: #e74c3c;"><div id="g-d9-pl-6"></div></div>
+                        <div class="chart-cell" style="border-color: #e74c3c;"><div id="g-d9-pl-5"></div></div>
+                    </div>
+                </div>
+                <div id="g-longitudes" style="margin-top: -10px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 15px; font-size: 14px; background: white; padding: 15px; border-radius: 8px; border: 1px solid #e74c3c; box-shadow: 0 2px 5px rgba(0,0,0,0.05);"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allCities = [];
+        let dynamicCities = [];
+        let searchTimeout = null;
+        let lastMatchData = null;
+
+        async function init() {
+            loadAllProfiles();
+            try {
+                const res = await fetch('/static/cities_short.json');
+                const data = await res.json();
+                allCities = data.cities;
+                
+                const list = document.getElementById('cityList');
+                allCities.forEach(city => {
+                    const opt = document.createElement('option');
+                    opt.value = `${city.name}, ${city.state}`;
+                    list.appendChild(opt);
+                });
+                
+                // Set default preferences if available
+                const prefsRes = await fetch('/api/preferences');
+                const prefs = await prefsRes.json();
+                if (prefs.default_location) {
+                    document.getElementById('bCity').value = prefs.default_location;
+                    document.getElementById('gCity').value = prefs.default_location;
+                    onCitySelect('b'); onCitySelect('g');
+                }
+            } catch (e) { console.error("Initialization Error:", e); }
+        }
+
+        async function onCitySelect(prefix) {
+            const val = document.getElementById(prefix + 'City').value;
+            
+            let selectedCity = allCities.find(c => `${c.name}, ${c.state}` === val) || dynamicCities.find(c => c.display_name === val);
+
+            if (selectedCity) {
+                document.getElementById(prefix + 'Lat').value = selectedCity.lat;
+                document.getElementById(prefix + 'Lon').value = selectedCity.lon;
+                
+                if (!selectedCity.tz) {
+                    try {
+                        document.getElementById(prefix + 'Tz').value = "Loading...";
+                        const tzRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${selectedCity.lat}&longitude=${selectedCity.lon}&timezone=auto`);
+                        const tzData = await tzRes.json();
+                        document.getElementById(prefix + 'Tz').value = tzData.utc_offset_seconds !== undefined ? (tzData.utc_offset_seconds / 3600) : 5.5;
+                    } catch (e) { document.getElementById(prefix + 'Tz').value = 5.5; }
+                } else {
+                    document.getElementById(prefix + 'Tz').value = selectedCity.tz;
+                }
+                return;
+            }
+
+            if (val.length < 3) return;
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(async () => {
+                try {
+                    const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(val)}&limit=5`, { headers: { 'Accept-Language': 'en' } });
+                    const data = await res.json();
+                    if (data && data.length > 0) {
+                        dynamicCities = data.map(item => ({ display_name: item.display_name, lat: item.lat, lon: item.lon }));
+                        const list = document.getElementById('cityList');
+                        list.innerHTML = '';
+                        dynamicCities.forEach(city => {
+                            const opt = document.createElement('option');
+                            opt.value = city.display_name;
+                            list.appendChild(opt);
+                        });
+                    }
+                } catch (e) {}
+            }, 600);
+        }
+
+        // Individual Profile Management
+        function loadAllProfiles() {
+            const profiles = JSON.parse(localStorage.getItem('individual_profiles') || '{}');
+            const bSel = document.getElementById('bProfileSelect');
+            const gSel = document.getElementById('gProfileSelect');
+            
+            const bVal = bSel.value;
+            const gVal = gSel.value;
+            
+            bSel.innerHTML = '<option value="">-- Load Profile --</option>';
+            gSel.innerHTML = '<option value="">-- Load Profile --</option>';
+            
+            for (let p in profiles) {
+                const gender = profiles[p].gender;
+                if (!gender || gender === 'b') {
+                    bSel.innerHTML += `<option value="${p}">${p}</option>`;
+                }
+                if (!gender || gender === 'g') {
+                    gSel.innerHTML += `<option value="${p}">${p}</option>`;
+                }
+            }
+            
+            bSel.value = bVal;
+            gSel.value = gVal;
+        }
+
+        function saveIndividualProfile(prefix) {
+            let defaultName = document.getElementById(prefix + 'Name').value.trim();
+            let currentSelection = document.getElementById(prefix + 'ProfileSelect').value;
+            let suggestedName = currentSelection || defaultName;
+            
+            let profileName = prompt("Enter a name to save this individual profile:", suggestedName);
+            if (!profileName || !profileName.trim()) return;
+            profileName = profileName.trim();
+
+            const data = {
+                gender: prefix,
+                name: document.getElementById(prefix + 'Name').value,
+                date: document.getElementById(prefix + 'Date').value,
+                time: document.getElementById(prefix + 'Time').value,
+                city: document.getElementById(prefix + 'City').value,
+                lat: document.getElementById(prefix + 'Lat').value,
+                lon: document.getElementById(prefix + 'Lon').value,
+                tz: document.getElementById(prefix + 'Tz').value
+            };
+
+            const profiles = JSON.parse(localStorage.getItem('individual_profiles') || '{}');
+            profiles[profileName] = data;
+            localStorage.setItem('individual_profiles', JSON.stringify(profiles));
+            
+            loadAllProfiles();
+            document.getElementById(prefix + 'ProfileSelect').value = profileName;
+        }
+
+        function deleteIndividualProfile(prefix) {
+            const name = document.getElementById(prefix + 'ProfileSelect').value;
+            if (!name) return;
+            if (confirm(`Are you sure you want to delete the profile "${name}"?`)) {
+                const profiles = JSON.parse(localStorage.getItem('individual_profiles') || '{}');
+                delete profiles[name];
+                localStorage.setItem('individual_profiles', JSON.stringify(profiles));
+                document.getElementById(prefix + 'ProfileSelect').value = '';
+                loadAllProfiles();
+            }
+        }
+
+        function loadIndividualProfile(prefix) {
+            const name = document.getElementById(prefix + 'ProfileSelect').value;
+            if (!name) {
+                ['Name','Date','Time','City','Lat','Lon','Tz'].forEach(id => document.getElementById(prefix + id).value = '');
+                return;
+            }
+            const profiles = JSON.parse(localStorage.getItem('individual_profiles') || '{}');
+            const data = profiles[name];
+            if (data) {
+                document.getElementById(prefix + 'Name').value = data.name || '';
+                document.getElementById(prefix + 'Date').value = data.date || '';
+                document.getElementById(prefix + 'Time').value = data.time || '12:00:00';
+                document.getElementById(prefix + 'City').value = data.city || '';
+                document.getElementById(prefix + 'Lat').value = data.lat || '';
+                document.getElementById(prefix + 'Lon').value = data.lon || '';
+                document.getElementById(prefix + 'Tz').value = data.tz || '';
+            }
+        }
+
+        async function calculateMatch() {
+            const boyData = {
+                date: document.getElementById('bDate').value, time: document.getElementById('bTime').value,
+                lat: document.getElementById('bLat').value, lon: document.getElementById('bLon').value, tz: document.getElementById('bTz').value
+            };
+            const girlData = {
+                date: document.getElementById('gDate').value, time: document.getElementById('gTime').value,
+                lat: document.getElementById('gLat').value, lon: document.getElementById('gLon').value, tz: document.getElementById('gTz').value
+            };
+
+            if (!boyData.date || !girlData.date || !boyData.lat || !girlData.lat) {
+                return alert("Please fill all Date and Location details for both Boy and Girl.");
+            }
+
+            document.getElementById('loadingOverlay').style.display = 'flex';
+
+            try {
+                const res = await fetch('/api/match', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ boy: boyData, girl: girlData })
+                });
+                const data = await res.json();
+                if (data.error) throw new Error(data.error);
+
+                lastMatchData = data;
+                renderResults(data);
+                document.getElementById('resultArea').style.display = 'block';
+            } catch (err) {
+                alert("Calculation Error: " + err.message);
+            } finally {
+                document.getElementById('loadingOverlay').style.display = 'none';
+            }
+        }
+
+        function renderResults(data) {
+            const bName = document.getElementById('bName').value || 'Boy';
+            const gName = document.getElementById('gName').value || 'Girl';
+            document.getElementById('thBoyName').innerHTML = `${bName}<br><span style="font-size: 13px; font-weight: normal; opacity: 0.9;">(${data.boy.nakshatra}-${data.boy.pada})</span>`;
+            document.getElementById('thGirlName').innerHTML = `${gName}<br><span style="font-size: 13px; font-weight: normal; opacity: 0.9;">(${data.girl.nakshatra}-${data.girl.pada})</span>`;
+
+            const tbody = document.getElementById('matchBody');
+            tbody.innerHTML = '';
+            data.koota.forEach(k => {
+                tbody.innerHTML += `<tr>
+                    <td style="font-weight:bold;">${k.name}</td>
+                    <td>${k.boy}</td>
+                    <td>${k.girl}</td>
+                    <td>${k.max}</td>
+                    <td style="font-weight:bold; color: ${k.score > (k.max/2) ? '#27ae60' : (k.score===0 ? '#c0392b' : '#f39c12')};">${k.score}</td>
+                </tr>`;
+            });
+            
+            let totalColor = data.total_score >= 18 ? '#27ae60' : '#c0392b';
+            tbody.innerHTML += `<tr class="score-row">
+                <td colspan="3" style="text-align: right;">Total Ashtakuta Score:</td>
+                <td>36</td>
+                <td style="color: ${totalColor};">${data.total_score}</td>
+            </tr>`;
+            
+            const exceptionsDiv = document.getElementById('matchExceptions');
+            if (data.exceptions && data.exceptions.length > 0) {
+                exceptionsDiv.style.display = 'block';
+                exceptionsDiv.innerHTML = `<h4 style="color: #d35400; margin-top: 0; margin-bottom: 5px;">⚠️ Exceptions / Special Rules Applied:</h4>
+                <ul style="text-align: left; color: #e67e22; margin: 0; font-weight: bold;">
+                    ${data.exceptions.map(e => `<li>${e}</li>`).join('')}
+                </ul>`;
+            } else {
+                exceptionsDiv.style.display = 'none';
+            }
+
+            const renderPlanet = (p) => {
+                let text = p.id;
+                let tags = '';
+                if(p.isR) tags += `<sup style="color:#2980b9; font-size:0.65em; margin-left:1px; font-weight:bold;">R</sup>`;
+                if(p.isC) tags += `<sub style="color:#c0392b; font-size:0.65em; margin-left:1px; font-weight:bold;">c</sub>`;
+                return `<span class="planet-${p.id}" style="display:inline-block;">${text}${tags}</span>`;
+            };
+
+            for(let i=0; i<12; i++) {
+                document.getElementById(`b-pl-${i}`).innerHTML = data.boy.chart[i].map(renderPlanet).join(' ');
+                document.getElementById(`g-pl-${i}`).innerHTML = data.girl.chart[i].map(renderPlanet).join(' ');
+                
+                document.getElementById(`b-d9-pl-${i}`).innerHTML = data.boy.chart_d9[i].map(renderPlanet).join(' ');
+                document.getElementById(`g-d9-pl-${i}`).innerHTML = data.girl.chart_d9[i].map(renderPlanet).join(' ');
+            }
+            
+            document.getElementById('bNakText').innerText = data.boy.nakshatra;
+            document.getElementById('bRasiText').innerText = data.boy.rasi;
+            document.getElementById('gNakText').innerText = data.girl.nakshatra;
+            document.getElementById('gRasiText').innerText = data.girl.rasi;
+            
+            const pNames = { 'Lg': 'Lagna', 'Su': 'Surya', 'Ch': 'Chandra', 'Ku': 'Kuja', 'Bu': 'Budha', 'Gu': 'Guru', 'Sk': 'Shukra', 'Sa': 'Shani', 'Ra': 'Rahu', 'Ke': 'Ketu' };
+            const order = ['Lg', 'Su', 'Ch', 'Ku', 'Bu', 'Gu', 'Sk', 'Sa', 'Ra', 'Ke'];
+
+            let bLonHtml = '';
+            let gLonHtml = '';
+            order.forEach(p => {
+                let bLon = data.boy.longitudes[p];
+                let bNameStr = pNames[p];
+                if(bLon.isR) bNameStr += ` <sup style="color:#2980b9; font-size:11px; font-weight:bold; margin-left:2px;">R</sup>`;
+                if(bLon.isC) bNameStr += ` <sub style="color:#c0392b; font-size:11px; font-weight:bold; margin-left:2px;">c</sub>`;
+                
+                bLonHtml += `<div style="display: flex; justify-content: space-between; border-bottom: 1px dashed #eee; padding-bottom: 3px;">
+                    <strong style="color: #2c3e50;">${bNameStr}</strong> 
+                    <span style="color: #e67e22; font-weight: bold;">${bLon.lon}</span>
+                </div>`;
+                
+                let gLon = data.girl.longitudes[p];
+                let gNameStr = pNames[p];
+                if(gLon.isR) gNameStr += ` <sup style="color:#2980b9; font-size:11px; font-weight:bold; margin-left:2px;">R</sup>`;
+                if(gLon.isC) gNameStr += ` <sub style="color:#c0392b; font-size:11px; font-weight:bold; margin-left:2px;">c</sub>`;
+                
+                gLonHtml += `<div style="display: flex; justify-content: space-between; border-bottom: 1px dashed #eee; padding-bottom: 3px;">
+                    <strong style="color: #2c3e50;">${gNameStr}</strong> 
+                    <span style="color: #e67e22; font-weight: bold;">${gLon.lon}</span>
+                </div>`;
+            });
+            document.getElementById('b-longitudes').innerHTML = bLonHtml;
+            document.getElementById('g-longitudes').innerHTML = gLonHtml;
+        }
+
+        async function exportMatchPDF(pdfType = 'ashtakuta') {
+            if (!lastMatchData) return;
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ orientation: 'portrait' });
+            const pageWidth = doc.internal.pageSize.getWidth();
+
+            let startY = 15;
+            try {
+                const img = new Image();
+                img.crossOrigin = "Anonymous";
+                img.src = '/logo.png';
+                await new Promise((resolve, reject) => { img.onload = resolve; img.onerror = reject; });
+                const canvas = document.createElement('canvas');
+                canvas.width = img.naturalWidth; canvas.height = img.naturalHeight;
+                canvas.getContext('2d').drawImage(img, 0, 0);
+                const base64Img = canvas.toDataURL('image/png');
+                const imgHeight = 22; 
+                const imgWidth = (img.naturalWidth / img.naturalHeight) * imgHeight;
+                doc.addImage(base64Img, 'PNG', (pageWidth - imgWidth) / 2, startY, imgWidth, imgHeight);
+                startY += 28;
+            } catch(e) { console.error("Logo loading failed", e); }
+
+            doc.setFontSize(16);
+            doc.setFont(undefined, 'bold');
+            doc.setTextColor(44, 62, 80);
+            doc.text("Marriage Matching Report", pageWidth/2, startY, { align: 'center' });
+            
+            doc.setLineWidth(0.5);
+            doc.setDrawColor(44, 62, 80);
+            doc.line(14, startY + 4, pageWidth - 14, startY + 4);
+            startY += 12;
+
+            doc.setFontSize(11);
+            doc.setTextColor(0, 0, 0);
+            
+            const bName = document.getElementById('bName').value || 'Boy';
+            const bDate = document.getElementById('bDate').value;
+            const bTime = document.getElementById('bTime').value;
+            const bCity = (document.getElementById('bCity').value || '').split(',')[0];
+            
+            const gName = document.getElementById('gName').value || 'Girl';
+            const gDate = document.getElementById('gDate').value;
+            const gTime = document.getElementById('gTime').value;
+            const gCity = (document.getElementById('gCity').value || '').split(',')[0];
+
+            doc.text(`Name: ${bName}`, 15, startY);
+            doc.text(`Name: ${gName}`, pageWidth/2 + 5, startY);
+            startY += 6;
+            doc.text(`DOB: ${bDate} ${bTime}`, 15, startY);
+            doc.text(`DOB: ${gDate} ${gTime}`, pageWidth/2 + 5, startY);
+            startY += 6;
+            doc.text(`POB: ${bCity}`, 15, startY);
+            doc.text(`POB: ${gCity}`, pageWidth/2 + 5, startY);
+            startY += 6;
+            doc.text(`Nakshatra: ${lastMatchData.boy.nakshatra} - ${lastMatchData.boy.pada}`, 15, startY);
+            doc.text(`Nakshatra: ${lastMatchData.girl.nakshatra} - ${lastMatchData.girl.pada}`, pageWidth/2 + 5, startY);
+
+            startY += 12;
+
+            const headers = [["Koota (Factor)", bName, gName, "Max", "Score"]];
+            const body = lastMatchData.koota.map(k => [k.name, k.boy, k.girl, k.max, k.score]);
+            let totalColor = lastMatchData.total_score >= 18 ? [39, 174, 96] : [192, 57, 43];
+            
+            body.push([{content: 'Total Ashtakuta Score', colSpan: 3, styles: {halign: 'right', fontStyle: 'bold'}}, '36', {content: `${lastMatchData.total_score}`, styles: {fontStyle: 'bold', textColor: totalColor}}]);
+
+            doc.autoTable({
+                head: headers,
+                body: body,
+                startY: startY,
+                styles: { fontSize: 10, cellPadding: 3, halign: 'center', valign: 'middle' },
+                headStyles: { fillColor: [44, 62, 80] },
+                theme: 'grid'
+            });
+
+            startY = doc.lastAutoTable.finalY + 10;
+
+            if (lastMatchData.exceptions && lastMatchData.exceptions.length > 0) {
+                doc.setFontSize(11);
+                doc.setFont(undefined, 'bold');
+                doc.setTextColor(211, 84, 0);
+                doc.text("Exceptions / Special Rules Applied:", 14, startY);
+                startY += 6;
+                doc.setFont(undefined, 'normal');
+                doc.setTextColor(0, 0, 0);
+                lastMatchData.exceptions.forEach(ex => {
+                    doc.text(`• ${ex}`, 18, startY);
+                    startY += 5;
+                });
+                startY += 5;
+            }
+
+            const astroNotes = document.getElementById('astrologerNotes').value.trim();
+            if (astroNotes) {
+                doc.setFontSize(11);
+                doc.setFont(undefined, 'bold');
+                doc.setTextColor(44, 62, 80);
+                doc.text("Astrologer's Notes:", 14, startY);
+                startY += 6;
+                doc.setFont(undefined, 'normal');
+                doc.setTextColor(51, 51, 51);
+                const splitNotes = doc.splitTextToSize(astroNotes, pageWidth - 28);
+                doc.text(splitNotes, 14, startY);
+                startY += (splitNotes.length * 5) + 5;
+            }
+
+            const pageHeight = doc.internal.pageSize.getHeight();
+            const timeStamp = new Date().toLocaleString('en-IN');
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'normal');
+            doc.setTextColor(100, 100, 100);
+            doc.text('vaiswanara@gmail.com', 14, pageHeight - 10);
+            doc.text(`Generated on: ${timeStamp}`, pageWidth - 14, pageHeight - 10, { align: 'right' });
+
+            if (pdfType === 'full') {
+                doc.addPage();
+                
+                doc.setFontSize(16);
+                doc.setFont(undefined, 'bold');
+                doc.setTextColor(44, 62, 80);
+                doc.text("Horoscope", pageWidth/2, 20, { align: 'center' });
+                doc.setLineWidth(0.5);
+                doc.setDrawColor(44, 62, 80);
+                doc.line(14, 24, pageWidth - 14, 24);
+                
+                const drawSouthIndianChart = (startX, startY, size, chartArray, centerTextLines, borderColor) => {
+                    const cellSize = size / 4;
+                    doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
+                    doc.setLineWidth(0.4);
+                    
+                    doc.rect(startX, startY, size, size);
+                    doc.rect(startX + cellSize, startY + cellSize, cellSize * 2, cellSize * 2);
+                    
+                    doc.line(startX + cellSize, startY, startX + cellSize, startY + size);
+                    doc.line(startX + cellSize * 2, startY, startX + cellSize * 2, startY + cellSize);
+                    doc.line(startX + cellSize * 2, startY + size - cellSize, startX + cellSize * 2, startY + size);
+                    doc.line(startX + cellSize * 3, startY, startX + cellSize * 3, startY + size);
+                    
+                    doc.line(startX, startY + cellSize, startX + size, startY + cellSize);
+                    doc.line(startX, startY + cellSize * 2, startX + cellSize, startY + cellSize * 2);
+                    doc.line(startX + size - cellSize, startY + cellSize * 2, startX + size, startY + cellSize * 2);
+                    doc.line(startX, startY + cellSize * 3, startX + size, startY + cellSize * 3);
+                    
+                    const positions = [
+                        [1, 0], [2, 0], [3, 0], [3, 1], [3, 2], [3, 3],
+                        [2, 3], [1, 3], [0, 3], [0, 2], [0, 1], [0, 0]
+                    ];
+                    
+                    for(let i=0; i<12; i++) {
+                        let planets = chartArray[i];
+                        let n = planets.length;
+                        
+                        if (n > 0) {
+                            let cellX = startX + positions[i][0] * cellSize;
+                            let cellY = startY + positions[i][1] * cellSize;
+                            let cx = cellX + cellSize/2;
+                            let cy = cellY + cellSize/2;
+                            
+                            let fontSize = 14;
+                            if (n === 2) fontSize = 13;
+                            else if (n === 3) fontSize = 12;
+                            else if (n === 4) fontSize = 10;
+                            else if (n === 5) fontSize = 9;
+                            else if (n >= 6) fontSize = 8;
+                            
+                            let spacing = fontSize * 0.5; // Line spacing in mm
+                            let rows = [];
+                            if (n <= 3) {
+                                for (let j = 0; j < n; j++) rows.push([planets[j]]);
+                            } else {
+                                for (let j = 0; j < n; j += 2) {
+                                    if (j + 1 < n) rows.push([planets[j], planets[j + 1]]);
+                                    else rows.push([planets[j]]);
+                                }
+                            }
+                            
+                            let L = rows.length;
+                            let startYPos = cy - (L - 1) * spacing / 2;
+                            
+                            doc.setFont(undefined, 'bold');
+                            for (let r = 0; r < L; r++) {
+                                let row = rows[r];
+                                let currentY = startYPos + r * spacing;
+                                
+                                let drawP = (p, px) => {
+                                    doc.setFontSize(fontSize);
+                                    doc.setTextColor(44, 62, 80);
+                                    let w = doc.getTextWidth(p.id);
+                                    doc.text(p.id, px, currentY, {align: 'center', baseline: 'middle'});
+                                    
+                                    let px_mod = px + w/2 + 0.3;
+                                    if (p.isR) {
+                                        doc.setFontSize(fontSize * 0.65);
+                                        doc.setTextColor(41, 128, 185); // Blue
+                                        doc.text('R', px_mod, currentY - fontSize * 0.15, {baseline: 'middle'});
+                                    }
+                                    if (p.isC) {
+                                        doc.setFontSize(fontSize * 0.65);
+                                        doc.setTextColor(192, 57, 43); // Red
+                                        doc.text('c', px_mod, currentY + fontSize * 0.15, {baseline: 'middle'});
+                                    }
+                                };
+
+                                if (row.length === 1) {
+                                    drawP(row[0], cx);
+                                } else {
+                                    let xOff = cellSize * 0.22;
+                                    drawP(row[0], cx - xOff); 
+                                    drawP(row[1], cx + xOff);
+                                }
+                            }
+                        }
+                    }
+                    
+                    doc.setFontSize(12);
+                    doc.setTextColor(borderColor[0], borderColor[1], borderColor[2]);
+                    if (centerTextLines && centerTextLines.length) {
+                        let cY = startY + size/2 - ((centerTextLines.length-1)*2.5);
+                        centerTextLines.forEach(line => {
+                            doc.text(line, startX + size/2, cY, {align: 'center', baseline: 'middle'});
+                            cY += 5;
+                        });
+                    }
+                };
+                
+                doc.setFontSize(12);
+                doc.setTextColor(41, 128, 185);
+                doc.text(`Boy: ${bName}`, pageWidth/2, 35, { align: 'center' });
+                drawSouthIndianChart(22.5, 40, 75, lastMatchData.boy.chart, ["Rasi", "D1"], [52, 152, 219]);
+                drawSouthIndianChart(112.5, 40, 75, lastMatchData.boy.chart_d9, ["Navamsha", "D9"], [52, 152, 219]);
+                
+                doc.setFontSize(12);
+                doc.setTextColor(192, 57, 43);
+                doc.text(`Girl: ${gName}`, pageWidth/2, 135, { align: 'center' });
+                drawSouthIndianChart(22.5, 140, 75, lastMatchData.girl.chart, ["Rasi", "D1"], [231, 76, 60]);
+                drawSouthIndianChart(112.5, 140, 75, lastMatchData.girl.chart_d9, ["Navamsha", "D9"], [231, 76, 60]);
+                
+                doc.setFontSize(10);
+                doc.setTextColor(100, 100, 100);
+                doc.text('vaiswanara@gmail.com', 14, pageHeight - 10);
+                doc.text(`Generated on: ${timeStamp}`, pageWidth - 14, pageHeight - 10, { align: 'right' });
+            }
+
+            doc.save(`${bName}_${gName}_Match.pdf`);
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
